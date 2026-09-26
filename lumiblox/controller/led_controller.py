@@ -194,6 +194,7 @@ class LEDController:
             [index[0], index[1]],
             self.config.data["colors"]["success_flash"]
         )
+        self.launchpad.flush(force=True)
         time.sleep(0.2)
     
     def render_status_frame(

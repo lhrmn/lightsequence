@@ -678,6 +678,9 @@ class LightController:
                 self._blink_phase = not self._blink_phase
                 self._last_blink_toggle = now
                 self._update_blinking_scene_leds()
+
+        # Send all LED changes of this frame to the device in one batch
+        self.launchpad.flush()
     
     def _on_device_state_changed(self, device_type, new_state) -> None:
         """Handle device state changes."""

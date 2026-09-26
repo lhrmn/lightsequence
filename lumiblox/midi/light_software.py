@@ -220,10 +220,12 @@ class LightSoftware:
 
         try:
             for msg in self.midi_in.iter_pending():
-                if msg.type == "note_on":
-                    scene = self.get_scene_coordinates_for_note(msg.note, msg.channel)
-                    if scene is not None:
-                        changes[scene] = msg.velocity > 0
+                state = self._feedback_state(msg)
+                if state is None:
+                    continue
+                scene = self.get_scene_coordinates_for_note(msg.note, msg.channel)
+                if scene is not None:
+                    changes[scene] = state
 
         except Exception as e:
             logger.error("MIDI feedback processing error: %s", e)
@@ -234,6 +236,21 @@ class LightSoftware:
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _feedback_state(msg: "mido.Message") -> t.Optional[bool]:
+        """Map a feedback message to scene state: True=on, False=off, None=ignore.
+
+        DasLight reports "off" as note_off (not note_on velocity 0), and "on" as
+        note_on with the mapping's configured velocity (often just 1). A click
+        also emits a transient low-velocity note_on right before the real state
+        message, so processing messages in order always ends on the right state.
+        """
+        if msg.type == "note_off":
+            return False
+        if msg.type == "note_on":
+            return msg.velocity > 0
+        return None
 
     def _mark_disconnected(self, reason: str) -> None:
         """Centralised helper to flag a broken connection."""
